@@ -10,41 +10,40 @@
     接続先 PeerID： <input type="text" id="connectId" name="peerid">
     <button type="button" onclick="connect()">接続</div>
   </div>
-  <video id="local_video" autoplay style = "width : 900px; height : 600px;">
+  <h2>local video</h2>
+  <video id="local_video" autoplay style = "width : 600px; height : 300px;"></video>
+  <h2>remote video</h2>
+  <video id="remote_video" autoplay style = "width : 600px; height : 300px;"></video>
 </body>
   <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
   <script type="text/javascript">
+    // ビデオ出力先
+    let localVideo = document.getElementById('local_video');
+    let remoteVideo = document.getElementById('remote_video');
     // PeerIDの表示
     var peer = new Peer();
     peer.on('open', function(id) {
       document.getElementById('peerid').textContent = id;
     });
-    // 受信する
-    peer.on('connection', function(conn) {
-        conn.on('data',function(data) {
-        // 受け取ったデータをコンソールログ出力
-        console.log(data);
+    // リモートのビデオと通信(受信側)
+    peer.on('call', function(call){
+      navigator.mediaDevices.getUserMedia({video : true, audio : true})
+      .then(function (stream) {
+        localVideo.srcObject = stream;
+        call.answer(stream);
+        call.on('stream', function(stream) {
+          remoteVideo.srcObject = stream;
+        });
+      }).catch(function (error) {
+        console.log(error);
       });
     });
-    // connectIdに送信する
-    function connect() {
-      connectId = document.getElementById("connectId").value;
-      const conn = peer.connect(connectId);
-      conn.on('open', function() {
-        conn.on('data', function(data) {
-          console.log('Received', data);
-        });
-
-        conn.send('Hello!');
-      });
-    };
-    // ビデオ表示
-    let localVideo = document.getElementById('local_video');
+   // ローカルビデオ表示
     navigator.mediaDevices.getUserMedia({video : true, audio : false})
     .then(function (stream) {
       localVideo.srcObject = stream;
     }).catch(function (error){
-      console.error('mediaDevices.getUserMedia() error:', error);
+      console.error(error);
       return;
     });
   </script>
